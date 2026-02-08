@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 
-from app.models.schemas import AssetCreateRequest, AssetResponse
+from app.models.schemas import AssetCreateRequest, AssetLifecycleRequest, AssetResponse
 from app.services.asset_service import AssetService
 
 
@@ -28,3 +28,12 @@ async def list_assets(
     asset_service: AssetService = Depends(get_asset_service),
 ) -> list[AssetResponse]:
     return asset_service.list_assets()
+
+
+@router.patch("/v1/assets/{asset_id}", response_model=AssetResponse)
+async def update_asset_status(
+    asset_id: str,
+    request: AssetLifecycleRequest,
+    asset_service: AssetService = Depends(get_asset_service),
+) -> AssetResponse:
+    return asset_service.update_status(asset_id, request.status)

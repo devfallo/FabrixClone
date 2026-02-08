@@ -25,3 +25,16 @@ class AssetService:
 
     def list_assets(self) -> List[AssetResponse]:
         return list(self._assets.values())
+
+    def update_status(self, asset_id: str, status: str) -> AssetResponse:
+        asset = self._assets[asset_id]
+        updated = AssetResponse(
+            id=asset.id,
+            asset_type=asset.asset_type,
+            name=asset.name,
+            version=asset.version,
+            payload=asset.payload,
+            status=status,
+        )
+        self._assets[asset_id] = updated
+        return updated

@@ -24,6 +24,9 @@ class AdminService:
             perms.extend(self._roles.get(role, []))
         return perms
 
+    def user_roles(self, user_id: str) -> List[str]:
+        return list(self._users.get(user_id, []))
+
     def increment_usage(self, key: str) -> None:
         if key in self._usage:
             self._usage[key] += 1

@@ -21,22 +21,22 @@ class PolicyService:
             re.compile(r"system prompt", re.IGNORECASE),
         ]
 
-    def check_input(self, message: str) -> tuple[bool, str]:
+    def check_input(self, message: str) -> tuple[bool, str, bool]:
         for pattern in self._pii_patterns:
             if pattern.search(message):
                 self._record("input", "block", "PII detected")
-                return False, "Input blocked due to PII policy."
+                return False, "Input blocked due to PII policy.", True
         for pattern in self._injection_patterns:
             if pattern.search(message):
                 self._record("input", "redact", "Prompt injection detected")
-                return True, "Potential injection detected; proceeding with caution."
-        return True, ""
+                return True, "Potential injection detected; proceeding with caution.", True
+        return True, "", False
 
-    def check_output(self, answer: str, citations: int) -> tuple[bool, str]:
+    def check_output(self, answer: str, citations: int) -> tuple[bool, str, bool]:
         if citations == 0:
             self._record("output", "redact", "No citations present")
-            return True, "Answer generated without citations; confidence reduced."
-        return True, ""
+            return True, "Answer generated without citations; confidence reduced.", True
+        return True, "", False
 
     def _record(self, policy: str, action: str, message: str) -> None:
         self._events.append(

@@ -17,6 +17,7 @@ class RunContext:
     ui_state: Dict[str, Any]
     policies: Dict[str, Any]
     tool_catalog: List[str]
+    permissions: List[str] = field(default_factory=list)
     kb_id: Optional[str] = None
     trace_id: Optional[str] = None
 

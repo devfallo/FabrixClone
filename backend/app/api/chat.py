@@ -38,7 +38,8 @@ async def chat_message(
     admin_service: AdminService = Depends(get_admin_service),
 ) -> ChatMessageResponse:
     ui_state = state_service.get_state(request.session_id)
-    roles = admin_service.user_permissions(request.user_id)
+    permissions = admin_service.user_permissions(request.user_id)
+    roles = admin_service.user_roles(request.user_id)
     ctx = RunContext(
         session_id=request.session_id,
         conversation_id=request.conversation_id,
@@ -49,6 +50,7 @@ async def chat_message(
         ui_state=ui_state,
         policies={"roles": roles},
         tool_catalog=[],
+        permissions=permissions,
         kb_id=ui_state.get("kb_id"),
     )
     return await engine.run(ctx)

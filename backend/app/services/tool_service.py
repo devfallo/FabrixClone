@@ -72,9 +72,18 @@ class ToolService:
             if field not in args:
                 raise ValueError(f"Missing required field: {field}")
 
-    def create_action(self, tool: str, args: Dict[str, Any], run_id: str) -> ToolRunRequest:
+    def create_action(
+        self,
+        tool: str,
+        args: Dict[str, Any],
+        run_id: str,
+        permissions: List[str],
+    ) -> ToolRunRequest:
         manifest = self.get_manifest(tool)
         self.validate_args(manifest, args)
+        missing = [perm for perm in manifest.permissions if perm not in permissions]
+        if missing:
+            raise PermissionError(f"Missing permissions: {', '.join(missing)}")
         return ToolRunRequest(run_id=run_id, action_id=str(uuid.uuid4()), tool=tool, args=args)
 
     def record_result(self, result: ToolRunResult) -> None:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
 
 from pydantic import BaseModel, Field
 
@@ -97,7 +97,11 @@ class AssetCreateRequest(BaseModel):
     name: str
     version: str
     payload: Dict[str, Any]
-    status: str = "draft"
+    status: Literal["draft", "review", "published", "deprecated"] = "draft"
+
+
+class AssetLifecycleRequest(BaseModel):
+    status: Literal["draft", "review", "published", "deprecated"]
 
 
 class AssetResponse(BaseModel):
@@ -106,7 +110,15 @@ class AssetResponse(BaseModel):
     name: str
     version: str
     payload: Dict[str, Any]
-    status: str
+    status: Literal["draft", "review", "published", "deprecated"]
+
+
+class AuditLogEntry(BaseModel):
+    actor: str
+    action: str
+    target: str
+    meta: Dict[str, Any]
+    created_at: datetime
 
 
 class UserCreateRequest(BaseModel):
@@ -125,6 +137,22 @@ class PolicyEvent(BaseModel):
     policy: str
     action: str
     message: str
+    created_at: datetime
+
+
+class LabJobCreateRequest(BaseModel):
+    kb_id: str
+    title: str
+    text: str
+    source_uri: Optional[str] = None
+    page: Optional[int] = None
+    acl: List[str] = Field(default_factory=list)
+
+
+class LabJobResponse(BaseModel):
+    job_id: str
+    status: Literal["queued", "running", "completed", "failed"]
+    message: Optional[str] = None
     created_at: datetime
 
 

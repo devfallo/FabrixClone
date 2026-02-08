@@ -12,20 +12,37 @@ from app.orchestrator.nodes.intent_classify import IntentClassify
 from app.orchestrator.nodes.output_policy import OutputPolicyCheck
 from app.orchestrator.nodes.rag_retrieve import RAGRetrieve
 from app.orchestrator.nodes.request_tool import RequestToolExecution
+from app.services.admin_service import AdminService
+from app.services.audit_service import AuditService
 from app.services.policy_service import PolicyService
 from app.services.rag_service import RAGService
 from app.services.tool_service import ToolService
 
 
 class OrchestratorEngine:
-    def __init__(self, policy_service: PolicyService, tool_service: ToolService, rag_service: RAGService) -> None:
+    def __init__(
+        self,
+        policy_service: PolicyService,
+        tool_service: ToolService,
+        rag_service: RAGService,
+        admin_service: AdminService,
+        audit_service: AuditService,
+    ) -> None:
         self._policy_service = policy_service
         self._tool_service = tool_service
         self._rag_service = rag_service
+        self._admin_service = admin_service
+        self._audit_service = audit_service
 
     async def run(self, ctx: RunContext) -> ChatMessageResponse:
         run_id = ctx.trace_id or str(uuid.uuid4())
         ctx.trace_id = run_id
+        self._audit_service.log(
+            actor=ctx.user_id,
+            action="chat.run",
+            target=run_id,
+            meta={"session_id": ctx.session_id, "conversation_id": ctx.conversation_id},
+        )
         combined_actions: List[Any] = []
         citations = []
         answer = ""
@@ -33,13 +50,13 @@ class OrchestratorEngine:
         events: List[str] = []
 
         nodes = [
-            InputPolicyCheck(self._policy_service),
+            InputPolicyCheck(self._policy_service, self._admin_service),
             IntentClassify(),
             RequestToolExecution(self._tool_service),
             ApplyActionResultPatch(self._tool_service),
             RAGRetrieve(self._rag_service),
             AnswerSynthesize(),
-            OutputPolicyCheck(self._policy_service),
+            OutputPolicyCheck(self._policy_service, self._admin_service),
         ]
 
         for node in nodes:
@@ -57,6 +74,14 @@ class OrchestratorEngine:
                 ctx.policies["citations"] = len(result.rag_context)
             if "halt" in result.events:
                 break
+
+        for action in combined_actions:
+            self._audit_service.log(
+                actor=ctx.user_id,
+                action="tool.request",
+                target=action.action_id,
+                meta={"tool": action.tool, "run_id": run_id},
+            )
 
         return ChatMessageResponse(run_id=run_id, answer=answer, citations=citations, tool_runs=combined_actions)
 

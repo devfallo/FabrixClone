@@ -23,5 +23,13 @@ class RequestToolExecution(Node):
             args["groups"] = ["category"]
         if not tool_name:
             return NodeResult()
-        action = self._tool_service.create_action(tool_name, args, run_id=ctx.trace_id or "")
+        try:
+            action = self._tool_service.create_action(
+                tool_name,
+                args,
+                run_id=ctx.trace_id or "",
+                permissions=ctx.permissions,
+            )
+        except PermissionError as exc:
+            return NodeResult(answer=str(exc), events=["halt"])
         return NodeResult(actions_requested=[action])
